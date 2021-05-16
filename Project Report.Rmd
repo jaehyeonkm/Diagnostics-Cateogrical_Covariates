@@ -1,0 +1,76 @@
+---
+title: "Project Report"
+author: "Jae Hyeon Kim, jkim554"
+date: "5/17/2021"
+output: 
+  html_document:
+    theme: default
+    toc: yes
+  
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Diagnostics on Categorical Covariates
+
+## Abstract
+
+This project aims to diagnose the categorical variables in 4 datasets. For each dataset, we checked the structure, coerced predictors to factor variables, built linear regressions, drew plots, calculated diagnostic indicators, performed a robust estimation procedure and the Huber’s method, generated VIF values, and applied ANOVA test and Tukey’s Method. As a result, we achieved, presented, and interpreted the results for the models in 4 datasets. We have found some interesting results on various diagnostics on categorical covariates
+
+## Introduction
+
+The purpose of this analysis is to find which methods are suitable for building linear regressions with multiple categorical covariates. When we work on the particular subject area, the data might have not only the numerical attributes but also the categorical attributes. These categorical predictors could affect the assumptions of linear regression: linearity relationship, constant variance, and error normality and the existence of leverages and outliers. Throughout the analysis, we will check what violations are visible for our chosen datasets with categorical variables and we will perform multiple methods to make better regression models and to fix any violations on assumptions.
+
+
+## Data
+
+`birthwt` - The data describes risk factors associated with low infant birth weight. The data set contains 189 observations and 10 attributes. ‘bwt’ attribute is the response variable and the rest attributes are the predictors.
+`hsb` - The data was collected to determine which factors are related to the choice of career that the students pursued in high school. The data set contains 200 observations and 11 attributes. Social science score, ‘socst’, is the response variable and rest attributes are the predictors. 
+`denim` - The data describes how much material is wasted from five different manufacturers. The data set contains 95 observations and 2 attributes. ‘waste’ variable is the response variable and the ‘supplier’ is the factor predictor.
+`butterfat` - The data shows the average butterfat content of milk from five cow breeds with two different age levels. The data set contains 100 observations and 3 attributes. ‘Butterfat’ is the response variable and the other two variables are predictors.
+
+
+## Methods
+
+We have conducted the following steps for the datasets we chose for this project: birthwt, hsb, denim, and butterfat. For each dataset, we firstly checked its structure and coerced predictors to factor variables if needed. Then, we built linear regression models that have one response variable and the rest variables as predictors. From here, we firstly used the diagnostics plots to check for possible violation of linearity relationship, constant variance, and error normality and the existence of leverages and outliers. If there is either nonlinearity or heteroscedasticity, we used the boxcox method to choose the best lambda value and then performed transformation. In order to generate specific diagnostic indicators to evaluate our models we calculated four representative indicators: Internally studentized residuals, mean-shift t-statistics, Cook's distances, and leverages. To fix the problem of outliers, we performed a robust estimation procedure, the Huber’s method and then replotted the diagnostics plots to check if the plots are improved. Then, we calculated the VIF value for the datasets that have more than two predictor variables(VIF > 10) to test for multicollinearity issues. Fortunately, no multicollinearity issue presents in our project. There is no indication of the non-normality of error. 
+
+Based the diagnostics plots we have observed that though many linear models do not violate the assumptions, their plots look more discrete compared to the datasets that only contain numeric variables: The residuals are plotted with a few fitted values with a mean of zero, which we guess is the result of having a categorical variable in the model. To check our guesses, we performed ANOVA test and Tukey’s Method to see if the factor levels significantly results in the differences of average means. 
+    
+We did not include the `low` categorical covariate in our `birthwt` models other than our full model because this only indicates that the birth weight of the child is less than 2.5kg. It simply tells us whether or not the birth weight was low, and does not actually contribute to the actual birth weight. 
+
+
+## Results
+
+### Birthwt dataset 
+
+After seeing the summary of the data set of BoxCox and the diagnostic plots, we can see that the BoxCox graph for birthWeight, we can see that 1 is within the 95% confidence interval. It suggests no transformation of the response. If we are seeking to transform the data set to be closer to 1. We can raise the response variable by 0.75. Which will get us closer to the value of 1. 
+
+The diagnostic plots (Appendix. 1-1, Graph 1) which are showing the residuals in four different ways before the boxcox transformation showed really good results: Residuals vs Fitted. Used to check the linear relationship assumptions. The results show a horizontal line, without distinct patterns is an indication for a linear relationship, which is good. Normal Q-Q. Used to examine whether the residuals are normally distributed. It’s good because residuals points follow the straight dashed line. Scale-Location. Used to check the homogeneity of variance of the residuals (homoscedasticity). The results show a horizontal line, but without equally spread points which is not a good indication of homoscedasticity. Residuals vs Leverage. Used to identify influential cases, that is extreme values that might influence the regression results when included or excluded from the analysis. This plot doesn’t show any points that are outside of our Cook’s distance which is a good indication.
+
+The diagnostic plots after the transformation (Appendix. 1-1, Graph 2) did not show much of a change in any of the variables and diagnostic plots.
+
+We calculated the internally studentized residuals (ISR) of the transformed full model,`data1`. ISR quantifies how large the residuals are in standard deviation units. Observation with an internally studentized residual that is larger than t (in absolute value) is generally deemed an outlier. Most ISR of the `data1` is below 3, except 2 observations with index No. 130 & 131. Using mean-shift t-statistics, we found out that only No. 130 observation was an extreme outlier. While No. 131, which is an outlier in the ISR test, was not detected in the mean-shift t-test. Trying to eliminate the existence of the potential outliers, we used the Huber method. However, new outliers exist after we apply Huber. By calculating the Cook’s distance, we aimed to check if influential points exist. We did not find any observations with the absolute value of Cook’s distance larger than 1, which means that no observation is highly influential in the `birthwt` dataset. The leverage of the ith observation is determined by the distance of xi from the mean as well as the variance of x in the sample. We got the leverage values as well and found out that No. 68 & No. 94 are the two observations with exceptionally high leverages.
+
+In order to determine whether there are statistically significant differences between the categorical covariates we generated anova tables for `race`, `smoke`, `ht`, `ui`. The result was that all the categorical covariates seemed to be significant with p-value smaller than 0.05. Then the four diagnostic plots were generated with models with one categorical variable,  `race`, `smoke`, `ht`, `ui`, there seemed to be no significant violations. Additionally, the boxcox models of the four models showed that all of them had a lambda value of one within the 95% interval which suggests no transformation (Appendix. 1-4). 
+
+Tukey’s simultaneous confidence interval for each of the categorical variables was calculated and they all had a similar trend. Non-smoker, no history of hypertension, and no presence of uterine irritability (level = 0) was superior to having all the three present (level =1). One interesting result was the `race` variable. It showed that the white race (level = 1) was significantly superior to black race (level = 2) in terms of a child’s birth weight (Appendix. 1-5).
+
+### Denim dataset 
+Denim dataset only has one categorical variable, the suppliers. From the diagnostics plots of mod_denim1(the initial linear model we built), we could tell  that the Residuals VS Fitted plot suggests no violation of linear relationship and constant variance. The normal Q-Q plot looks good as the points are approximately a straight line and the points are close to the line, suggesting no violation of normality of errors. The scale-location plot follows an almost horizontal line, which implies no violation of constant variance. However, the 82nd and 87 observations look problematic on the scale-location and residual VS leverage plot, suggesting they can be possible high leverage points and outliers. To test for leverages, we calculated the hat values for mod_denim. It turned out that none of the VIF values of predictors are larger than 10 so we concluded no leverages exist. The mean shift test showed observation 82nd and 87th are indeed outliers. To fix the outliers, we used the  Huber’s method and the plots satisfied with all assumptions when we replotted the diagnostics plots. No Tukey’s method is needed as only one categorical variable was included in the regression and none of the p-values for each factor levels from summary of mod_denim1  is larger than 0.05, suggesting that there are no major differences between the average mean of water waste percentage for denim among the 5 suppliers chosen. 
+
+### Butterfat dataset 
+Both Breed and Age are categorical variables in the butterfat dataset. The diagnostics plots from (mod_bf) suggested no violation of linearity and error normality and indicated no leverages and outliers. However, the scale-location plot looks problematic as the errors seem to increase with fitted values and no outliers and leverages exist. To fix the non-constant variance issue, we performed a boxcox method and determined the lambda value should be -1.  We performed the transformation on the response variable to (-1) power, and then we rechecked the diagnostics plots. The heteroscedasticity is fixed. 
+
+Interestingly, the last diagnostic plot is replaced with Residual VS Factor Levels. Since the Age variable is not significant according to the summary(mod_bf), the factor level combinations are based on Breed. The plot suggests the error variance stays almost the same among factor levels. Then, we tested for the significance of the  interaction between Age and Breed by building up a model(mod_bf_int) with interaction factor included and using the anova test(anova(mod_bf, mod_bf_int)).  The anova test with ‘Breed’ as main effect shows a p-value smaller than 0.5 and the anova test with ‘Age’ as main effect shows a p-value larger than 0.5 (Appendix. 2-5). This proves that the ‘Breed’ factor is significant, while ‘Age’ is not. Therefore, we only performed Tukey’s simultaneous confidence interval for ‘Breed’ and the result tells us that all of the breed combinations are significant under the 5% significance test except for ‘Jersey-Guernsey’ (Appendix. 2-6).
+
+As no VIF values are larger than 10, there is no multicollinearity issue between the predictors. 
+ 
+
+### hsb dataset 
+Since there are ten predictor variables, we got the VIF values from mod_hsb to determine that the multicollinearity issue doesn't exist as none of the VIFs are larger than 10. The diagnostics plots  looked more “continuous” compared to the plots we have for denim and butterfat. We guess that's because there are many categorical variables in the dataset, and the number of observations is larger, which blur the factor effects for each categorical variable. All the plots indicate no violation of linearity relationship and error normality. IRS test and the mean-shift t-statistics does not find any outliers. The hat value test indicates  observations#185, #194 & # 196 to be high leverage points but There is no observation that has strong influence according to the Cook’s Distance. The scale-location plot shows a minor breach of constant variance as the error first increases and then decreases as fitted values increase. So we used the boxcox method and chose lambda = 3/2 to conduct the transformation of response. The scale-location plot doesn't look better after the transformation, so we used generalized linear regression instead. Then we plotted diagnostics graphics, and everything looks good. We performed the 4 tests for the generalized linear model of the dataset hsb. Turns out the observations with high leverages, #185, #194 & # 196 still exist and no outliers presented in the model. 
+
+
+## Conclusion
+For the datasets we have used in this report, we found the linear regression models usually have issues on the scale-location and residual vs. leverage plots, indicating non-constant variance, leverage and outlier issues. Transformation and generalized linear regression worked when we tried to fix non-constant variance. Huber’s method helped us fix the outliers. The residual vs. fitted plots for datasets with many categorical predictors such as birthwt and hsb tends to be more “continuous” compared to those of datasets with only one or two categorial variables. Residual with factor levels was replaced with residual vs leverage in the butterfat dataset, which offered us a better understanding of the variance differences among factor levels. Some interesting results we found during our analysis were that different types of outlier tests may lead to conflicting results. Observation No. 131 in birthwt and observation No. 163 in Hsb, which are considered as outliers in the ISR test, were not detected in the mean-shift t-test. Our group used more than one dataset for our analysis because one dataset was not enough to represent the many different types of diagnostics that could exist for categorical covariates. From this we were able to explore many different types of difficulties when conducting diagnostics for categorical covariates. 

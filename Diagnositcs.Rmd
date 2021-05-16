@@ -1,0 +1,510 @@
+---
+title: "Multiple Diagnositcs on Categorical Covariates"
+---
+
+
+```{r}
+library(MASS)
+library(tidyverse)
+library(faraway)
+```
+
+```{r}
+#Factorize variables
+birthwt$race <- as.factor(birthwt$race)
+
+birthwt$smoke <- as.factor(birthwt$smoke)
+
+birthwt$ht <- as.factor(birthwt$ht)
+
+birthwt$ui <- as.factor(birthwt$ui)
+
+birthwt$low <- as.factor(birthwt$low)
+
+str(birthwt)
+```
+
+```{r}
+#Run the regression, including all covariates
+data = lm(bwt ~. - low, data = birthwt)
+summary(data)
+```
+
+```{r}
+#Generate diagnostic plots for the model with all covariates
+par(mfrow = c(2, 2))
+plot(data)
+```
+```{r}
+#Boxcox test for the model
+boxcox(data)
+```
+
+*According to the result of boxcox test, transformation is needed.*
+
+
+```{r}
+data1 = lm(bwt**0.75 ~. ,data = birthwt) 
+boxcox(data1)
+```
+
+**Examine Leverages of the transformed model**
+```{r}
+hatvalues(data1)
+plot(hatvalues(data1), type="h")
+```
+
+**Examine internally Studentized residuals of the transformed model**
+```{r}
+rstandard(data1)
+plot(rstandard(data1), type="h")
+```
+
+**Examine mean-shift t-statistics of the transformed model**
+```{r}
+rstudent(data1)
+critval <- qt(0.05/(2*nobs(data1)), df=df.residual(data1)-1, lower=FALSE)
+which(abs(rstudent(data1)) > critval)
+```
+
+**Examine Cook's distances to check influences**
+```{r}
+cooks.distance(data1)
+which(cooks.distance(data1) >= 1)
+plot(cooks.distance(data1), type="h")
+```
+
+
+
+**Shows the interaction between race and smoking status during pregnancy**
+```{r}
+lmod.inter <- lm(bwt ~ race * smoke, data = birthwt)
+lmod.main <- lm(bwt ~ race + smoke, data = birthwt)
+anova(lmod.main, lmod.inter)
+```
+* *As we can see, p-value is greater than 0.05 such that we do not reject the null hypotheses that the interaction effect is not present.*
+
+
+**Shows the interaction between age and race during pregnancy**
+```{r}
+lmod.inter1 <- lm(bwt ~ age * race, data = birthwt)
+lmod.main1 <- lm(bwt ~ age + race, data = birthwt)
+anova(lmod.main1, lmod.inter1)
+```
+* *As we can see, p-value is greater than 0.05 such that we do not reject the null hypotheses that the interaction effect is not present.*
+
+
+**Shows the interaction between number of physician visits during the first trimester and number of previous premature labors during pregnancy**
+```{r}
+lmod.inter2 <- lm(bwt ~ ftv * ht, data = birthwt)
+lmod.main2 <- lm(bwt ~ ftv + ht, data = birthwt)
+anova(lmod.main2, lmod.inter2)
+```
+* *As we can see, p-value is greater than 0.05 such that we do not reject the null hypotheses that the interaction effect is not present.*
+
+
+**Shows the interaction between mother’s age and mother’s weight in pounds at last menstrual period during pregnancy**
+```{r}
+lmod.inter3 <- lm(bwt ~ lwt * age, data = birthwt)
+lmod.main3 <- lm(bwt ~ lwt + age, data = birthwt)
+anova(lmod.main3, lmod.inter3)
+```
+* *As we can see, p-value is greater than 0.05 such that we do not reject the null hypotheses that the interaction effect is not present.*
+
+
+**Shows the interaction between smoking status and presence of uterine irritability during pregnancy**
+```{r}
+lmod.inter4 <- lm(bwt ~ smoke * ui, data = birthwt)
+lmod.main4 <- lm(bwt ~ smoke + ui, data = birthwt)
+anova(lmod.main4, lmod.inter4)
+```
+* *As we can see, p-value is greater than 0.05 such that we do not reject the null hypotheses that the interaction effect is not present.*
+
+
+**Shows the interaction between age and smoking status during pregnancy**
+```{r}
+lmod.inter5 <- lm(bwt ~ age * smoke, data = birthwt)
+lmod.main5 <- lm(bwt ~ age + smoke, data = birthwt)
+anova(lmod.main5, lmod.inter5)
+```
+* *As we can see, p-value is less than 0.05 such that we reject the null hypotheses that the interaction effect is not present.*
+
+
+***********
+
+```{r}
+boxcox(lmod.inter5)
+par(mfrow = c(2, 2))
+plot(lmod.inter5)
+```
+
+```{r}
+# transform lmod.inter5
+lmod.inter5_trans <- lm(bwt^1.25 ~ age * smoke, data = birthwt)
+
+boxcox(lmod.inter5_trans)
+par(mfrow = c(2, 2))
+plot(lmod.inter5)
+# didn't seem to change much from the original plots
+```
+
+**Examine Leverages of the transformed model**
+```{r}
+hatvalues(lmod.inter5_trans)
+plot(hatvalues(lmod.inter5_trans), type="h")
+```
+
+**Examine internally Studentized residuals of the transformed model**
+```{r}
+rstandard(lmod.inter5_trans)
+plot(rstandard(lmod.inter5_trans), type="h")
+```
+
+**Examine mean-shift t-statistics of the transformed model**
+```{r}
+rstudent(lmod.inter5_trans)
+critval <- qt(0.05/(2*nobs(lmod.inter5_trans)), df=df.residual(lmod.inter5_trans)-1, lower=FALSE)
+which(abs(rstudent(lmod.inter5_trans)) > critval)
+```
+
+**Examine Cook's distances to check influences**
+```{r}
+cooks.distance(lmod.inter5_trans)
+which(cooks.distance(lmod.inter5_trans) >= 1)
+plot(cooks.distance(lmod.inter5_trans), type="h")
+```
+
+
+
+
+***********
+
+* *`low` variable was removed because this only indicates that the birth weight of the child is less than 2.5kg. It just tells us whether or not the birth weight was low, and does not actually contribute to the actual birth weight.*
+
+```{r}
+# experimenting with categorical variables separately
+lmod.race = lm(bwt ~ race, data = birthwt)
+lmod.smoke = lm(bwt ~ smoke, data = birthwt)
+lmod.ht = lm(bwt ~ ht, data = birthwt)
+lmod.ui = lm(bwt ~ ui, data = birthwt)
+
+
+anova(lmod.race)
+anova(lmod.smoke)
+anova(lmod.ht)
+anova(lmod.ui)
+```
+
+* *all the categorical covariates seem to be significant with p-value smaller than 0.05*
+
+```{r}
+boxcox(lmod.race)
+par(mfrow = c(2, 2))
+plot(lmod.race)
+```
+
+```{r}
+boxcox(lmod.smoke)
+par(mfrow = c(2, 2))
+plot(lmod.smoke)
+```
+
+```{r}
+boxcox(lmod.race)
+par(mfrow = c(2, 2))
+plot(lmod.race)
+```
+
+```{r}
+boxcox(lmod.ht)
+par(mfrow = c(2, 2))
+plot(lmod.ht)
+```
+
+```{r}
+boxcox(lmod.ui)
+par(mfrow = c(2, 2))
+plot(lmod.ui)
+```
+
+* *seems like all of the boxcox plots seem to have lambda value = 1 within the 95% confidence interval. It suggests no transformation of the response*
+
+```{r}
+TukeyHSD(aov(bwt ~ race, data = birthwt))
+
+with(birthwt, tapply(bwt, race, mean))
+```
+* *the best race in terms of child's birth weight is 1 = white, and the second best is 2 = black. Accordingto the Tukey's simultaneous confidence intervals, we can see that 1 = white is superior to 2 = white under the 5% significance level. Thus white race is clearly superior to black race in terms of child's birth weight*
+
+
+```{r}
+TukeyHSD(aov(bwt ~ smoke, data = birthwt))
+with(birthwt, tapply(bwt, smoke, mean))
+```
+
+* *the best smoking status in terms of child's birth weight is 0 = non-smoker. According to Tukey's simultaneous confidence intervals, we can see that 0 = non-smoker is superior to 1 = smoker under the 5% significance level. Thus 0 = non-smoker is clearly superior to 1 = smoker in terms of child's birth weight*
+
+```{r}
+TukeyHSD(aov(bwt ~ ht, data = birthwt))
+with(birthwt, tapply(bwt, ht, mean))
+```
+
+* *the best history of hypertension in terms of child's birth weight is 0 = no hypertension. According to Tukey's simultaneous confidence intervals, we can see that 0 = no hypertension is superior to 1 = history of hypertension under the 5% significance level. Thus having no history of hypertension is clearly superior to having a history of hypertension in terms of child's birth weight*
+
+```{r}
+TukeyHSD(aov(bwt ~ ui, data = birthwt))
+with(birthwt, tapply(bwt, ui, mean))
+```
+
+* *the best presence of uterine irritability in terms of child's birth weight is 0 = no presence of uterine irritability. According to the Tukey's simultaneous confidence intervals, we can see that 0 = no presence is superior to 1 = presence of irritability under the 5% significance level. Thus having no presence is clearly superior to having presence of uterine irritability in terms of child's birth weight*
+
+
+**hsb dataset** 
+```{r}
+head(hsb)
+str(hsb)
+
+pairs(hsb, col = "dodgerblue")
+mod_hsb <- lm(socst ~., data = hsb)
+summary(mod_hsb)
+
+par(mfrow = c(2, 2))
+plot(mod_hsb)
+```
+Based on the scale-location plot, the horizontal line goes off at the end. The non-equally spread points indicates possible violation of homoscedasticity.
+
+
+```{r}
+vif(mod_hsb) > 5
+```
+VIF for all predictor variables are smaller than 5, which indicates there is no multicolinearity issue. 
+
+
+```{r}
+boxcox(mod_hsb) #see if we need transformation 
+mod_hsb_trans <- lm((socst) ^(3/2) ~., data = hsb)
+summary(mod_hsb_trans)
+par(mfrow = c(2, 2))
+plot(mod_hsb_trans)
+```
+
+Based on the Fitted VS Residual plot, the model has a linear relationship and the errors are not correlated.
+Normal QQ plot looks find which indicates no non-normality error and residual VS leverage plot looks good.
+Scale-laction plot, especially the red line, still looks kind of off at the end, indicating average magnitude of the standardized residuals is changing much as a function of the fitted values.The sread around the red line vary with the fitted values indicating possible violation of homoscedasticity. 
+
+**Examine Leverages of the transformed model**
+```{r}
+hatvalues(mod_hsb_trans)
+plot(hatvalues(mod_hsb_trans), type="h")
+```
+
+**Examine internally Studentized residuals of the transformed model**
+```{r}
+rstandard(mod_hsb_trans)
+plot(rstandard(mod_hsb_trans), type="h")
+```
+
+**Examine mean-shift t-statistics of the transformed model**
+```{r}
+rstudent(mod_hsb_trans)
+critval <- qt(0.05/(2*nobs(mod_hsb_trans)), df=df.residual(mod_hsb_trans)-1, lower=FALSE)
+which(abs(rstudent(mod_hsb_trans)) > critval)
+```
+
+**Examine Cook's distances to check influences**
+```{r}
+cooks.distance(mod_hsb_trans)
+which(cooks.distance(mod_hsb_trans) >= 1)
+plot(cooks.distance(mod_hsb_trans), type="h")
+```
+
+Interaction
+```{r}
+?hsb
+mod_int1 <- lm(socst ~ gender * race, data = hsb)
+mod_inta <- lm(socst ~ gender + race, data = hsb)
+anova(mod_int1, mod_inta)[2,4] > 0.05
+
+mod_int2 <- lm(socst ~ gender * ses, data =hsb)
+mod_intb <- lm(socst ~ gender + ses, data = hsb)
+anova(mod_int2, mod_intb)[2,4] > 0.05
+
+mod_int3 <- lm(socst ~ ses * race, data =hsb)
+mod_intc <- lm(socst ~ ses + race, data = hsb)
+anova(mod_int3, mod_intc)[2,4] > 0.05
+
+mod_int4 <- lm(socst ~ schtyp * race, data =hsb)
+mod_intd <- lm(socst ~ schtyp + race, data = hsb)
+anova(mod_int4, mod_intd)[2,4] > 0.05
+
+mod_int5 <- lm(socst ~ schtyp * prog, data =hsb)
+mod_inte <- lm(socst ~ schtyp + prog, data = hsb)
+anova(mod_int5, mod_inte)[2,4] > 0.05
+
+mod_int6 <- lm(socst ~ ses * prog, data =hsb)
+mod_intf <- lm(socst ~ ses + prog, data = hsb)
+anova(mod_int6, mod_intf)[2,4] > 0.05
+
+```
+No interaction effect between the varibles above as all the p values are not significant. 
+
+Use Generalzied Square Method to fix the error issue.
+```{r}
+mod_hsb_glm <- glm((socst) ^ 3/2 ~ ., data = hsb)
+summary(mod_hsb_glm)
+par(mfrow = c(2, 2))
+plot(mod_hsb_glm)
+
+library(MASS)
+#Huber’s method
+ghuber_hsb <- rlm((socst) ^ 3/2 ~.,data = hsb)
+par(mfrow = c(2, 2))
+plot(ghuber_hsb)
+```
+
+None of the remedies fix the scale-location plot. 
+
+************
+
+**Just Experiments**
+
+one categorical variable
+```{r}
+library(tidyverse)
+library(MASS)
+str(denim)
+ggplot(denim, aes(x = denim$supplier)) + geom_bar() + labs(y = "denim$waste")
+par(mfrow = c(2, 2))
+plot(denim$supplier, denim$waste)
+mod_denim1 <- lm(waste ~ supplier, data = denim)
+summary(mod_denim1)
+
+par(mfrow = c(2, 2))
+plot(mod_denim1)
+stripchart(denim$waste ~ denim$supplier)
+TukeyHSD(aov(mod_denim1))
+
+min(denim$waste)
+boxcox(waste + 12 ~ supplier, data = denim)
+mod_denim_trans = lm((waste + 12) ^ 1/2 ~., data = denim)
+summary(mod_denim_trans)
+TukeyHSD(aov(mod_denim_trans))
+par(mfrow = c(2, 2))
+plot(mod_denim_trans) #plot[4] worth paying attention
+```
+
+***
+
+# butterfat (two categorial variables)
+
+```{r}
+mod_bf <- lm(Butterfat ~ ., data = butterfat)
+mod_bf_int <- lm(Butterfat ~ Breed * Age, data = butterfat)
+interaction.plot(butterfat$Breed,butterfat$Age, butterfat$Butterfat)
+```
+
+```{r}
+summary(mod_bf)
+summary(mod_bf_int)
+```
+
+```{r}
+anova(mod_bf, mod_bf_int)
+anova(mod_bf, mod_bf_int)[2,6] > 0.05
+```
+
+* *As we can see, p-value is greater than 0.05 such that we do not reject the null hypotheses that the interaction effect is not present.*
+
+```{r}
+par(mfrow = c(2, 2))
+plot(mod_bf)
+```
+```{r}
+boxcox(mod_bf)
+```
+
+* *According to the result of boxcox test, transformation is needed.*
+
+```{r}
+# transform mod_bf
+mod_bf_trans <- lm((Butterfat) ^ (-1.4) ~., data = butterfat)
+boxcox(mod_bf_trans)
+```
+
+```{r}
+par(mfrow = c(2, 2))
+plot(mod_bf_trans)
+```
+
+* *The diagnostic plot got much better*
+
+**Examine Leverages of the transformed model**
+```{r}
+hatvalues(mod_bf_trans)
+plot(hatvalues(mod_bf_trans), type="h")
+```
+
+**Examine internally Studentized residuals of the transformed model**
+```{r}
+rstandard(mod_bf_trans)
+plot(rstandard(mod_bf_trans), type="h")
+```
+
+**Examine mean-shift t-statistics of the transformed model**
+```{r}
+rstudent(mod_bf_trans)
+critval <- qt(0.05/(2*nobs(mod_bf_trans)), df=df.residual(mod_bf_trans)-1, lower=FALSE)
+which(abs(rstudent(mod_bf_trans)) > critval)
+```
+
+**Examine Cook's distances to check influences**
+```{r}
+cooks.distance(mod_bf_trans)
+which(cooks.distance(mod_bf_trans) >= 1)
+plot(cooks.distance(mod_bf_trans), type="h")
+```
+
+```{r}
+TukeyHSD(aov(Butterfat ~ Breed, data = butterfat))
+with(butterfat, tapply(Butterfat, Breed, mean))
+```
+
+* *the best Breed in terms of butterfat is 'Jersey', and the second best is 'Guernsey'. Although 'Jersey' is not superior to 'Guernsey' under the 5% significance level, we can say that 'Jersey' is still better than other breeds in terms of butterfat*
+
+```{r}
+TukeyHSD(aov(Butterfat ~ Age, data = butterfat))
+with(butterfat, tapply(Butterfat, Age, mean))
+```
+
+* *the best Age in terms of butterfat is 'Mature'. Although 'Mature' is not superior to '2-year' under the 5% significance level, we can say that 'Mature' is slightly better than '2-year' in terms of butterfat*
+
+
+
+three categorical variabls 
+```{r}
+eggs
+mod_eggs <- lm(Fat ~., data = eggs)
+summary(mod_eggs)
+par(mfrow = c(2, 2))
+plot(mod_eggs)#plot[4] worth paying attention (seperated into groups but seems have some violations)
+
+#test interaction 
+mod_eggs1 <- lm(Fat ~ Lab * Technician, data = eggs)
+mod_eggsa<- lm(Fat ~ Lab + Technician, data = eggs)
+anova(mod_eggs1, mod_eggsa) #Interaction between Lab & Technician 
+
+mod_eggs2 <- lm(Fat ~ Lab * Sample, data = eggs)
+mod_eggsb<- lm(Fat ~ Lab + Sample, data = eggs)
+anova(mod_eggs2, mod_eggsb) #No interaction
+
+mod_eggs3 <- lm(Fat ~ Technician * Sample, data = eggs)
+mod_eggsc<- lm(Fat ~ Technician + Sample, data = eggs)
+anova(mod_eggs3, mod_eggsc) #No interaction
+
+mod_egg_int <- lm(Fat ~ Technician + Sample + Lab + Lab * Technician, data = eggs)
+par(mfrow = c(2, 2))
+plot(mod_egg_int) #Many issues for this one. I can research on why the issues happane and how can we possibly solve it  
+boxcox(mod_egg_int) #No transformation needed 
+```
+All the three datasets only contain categorical variabls which many have some limitations. 
+
